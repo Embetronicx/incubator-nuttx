@@ -56,3 +56,21 @@ config ESP32_LCD_OVERCLOCK
 		SPI interface is 10MHz. However, in practice the driver chips work
 		fine with a higher clock rate, and using that gives a better
 		framerate. Select this to try using the out-of-spec clock rate.
+
+comment "Drivers added by EmbeTronicX (www.embetronicx.com)"
+
+menu "EmbeTronicX Drivers"
+
+config ESP32_ETX_LED
+	bool "EmbeTronicX LED driver"
+	default n
+	---help---
+		Enables the GPIOs to control the LEDs (ESP32).
+		
+		This is added by the EmbeTroincX to demonstrate the
+		LED control using the ESP32 Dev board with NuttX.
+		
+		This includes the EmbeTronicX LED driver which controls 
+		the output.
+		
+endmenu # EmbeTronicX Drivers		

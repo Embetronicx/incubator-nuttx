@@ -46,6 +46,10 @@
 #  include <nuttx/leds/userled.h>
 #endif
 
+#ifdef CONFIG_ESP32_ETX_LED
+#include "esp32_etx_led.h"
+#endif
+
 #ifdef CONFIG_CAN_MCP2515
 #  include "esp32_mcp2515.h"
 #endif
@@ -267,6 +271,16 @@ int esp32_bringup(void)
   if (ret < 0)
     {
       syslog(LOG_ERR, "ERROR: userled_lower_initialize() failed: %d\n", ret);
+    }
+#endif
+
+#ifdef CONFIG_ESP32_ETX_LED
+  /* Register the EmbeTronicX LED Driver */
+
+  ret = etx_led_driver_init();
+  if (ret < 0)
+    {
+      syslog(LOG_ERR, "ERROR: etx_led_driver_init() failed: %d\n", ret);
     }
 #endif
 
