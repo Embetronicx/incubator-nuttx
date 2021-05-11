@@ -73,4 +73,16 @@ config ESP32_ETX_LED
 		This includes the EmbeTronicX LED driver which controls 
 		the output.
 		
+config ESP32_ETX_GPIO
+	bool "EmbeTronicX GPIO driver"
+	default n
+	---help---
+		Enables the GPIO driver to control the GPIOs (ESP32).
+		
+		This is added by the EmbeTroincX to demonstrate the
+		GPIO control using the ESP32 Dev board with NuttX.
+		
+		This includes the EmbeTronicX GPIO driver which controls 
+		the GPIO.
+		
 endmenu # EmbeTronicX Drivers		
