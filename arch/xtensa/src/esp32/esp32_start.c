@@ -26,6 +26,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <assert.h>
 
 #include <nuttx/init.h>
 #include <nuttx/irq.h>
@@ -91,10 +92,6 @@ void IRAM_ATTR __start(void)
   regval &= ~RTC_CNTL_WDT_FLASHBOOT_MOD_EN;
   putreg32(regval, RTC_CNTL_WDTCONFIG0_REG);
 
-  regval  = getreg32(0x6001f048); /* DR_REG_BB_BASE+48 */
-  regval &= ~(1 << 14);
-  putreg32(regval, 0x6001f048);
-
   /* Make sure that normal interrupts are disabled.  This is really only an
    * issue when we are started in un-usual ways (such as from IRAM).  In this
    * case, we can at least defer some unexpected interrupts left over from
@@ -159,7 +156,7 @@ void IRAM_ATTR __start(void)
 #ifdef USE_EARLYSERIALINIT
   /* Perform early serial initialization */
 
-  xtensa_early_serial_initialize();
+  xtensa_earlyserialinit();
 #endif
 
   showprogress("A");

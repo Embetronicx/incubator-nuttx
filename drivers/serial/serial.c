@@ -31,6 +31,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <poll.h>
+#include <assert.h>
 #include <errno.h>
 #include <debug.h>
 
@@ -166,24 +167,15 @@ static void uart_pollnotify(FAR uart_dev_t *dev, pollevent_t eventset)
 #endif
           if (fds->revents != 0)
             {
-              irqstate_t flags;
               int semcount;
 
               finfo("Report events: %02x\n", fds->revents);
 
-              /* Limit the number of times that the semaphore is posted.
-               * The critical section is needed to make the following
-               * operation atomic.
-               */
-
-              flags = enter_critical_section();
               nxsem_get_value(fds->sem, &semcount);
               if (semcount < 1)
                 {
                   nxsem_post(fds->sem);
                 }
-
-              leave_critical_section(flags);
             }
         }
     }
@@ -198,10 +190,6 @@ static int uart_putxmitchar(FAR uart_dev_t *dev, int ch, bool oktoblock)
   irqstate_t flags;
   int nexthead;
   int ret;
-
-#ifdef CONFIG_SMP
-  irqstate_t flags2 = enter_critical_section();
-#endif
 
   /* Increment to see what the next head pointer will be.
    * We need to use the "next" head pointer to determine when the circular
@@ -337,10 +325,6 @@ static int uart_putxmitchar(FAR uart_dev_t *dev, int ch, bool oktoblock)
   ret = OK;
 
 err_out:
-
-#ifdef CONFIG_SMP
-  leave_critical_section(flags2);
-#endif
 
   return ret;
 }
@@ -1403,7 +1387,6 @@ static int uart_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
               /* Save the PID of the recipient of the SIGINT signal. */
 
               dev->pid = (pid_t)arg;
-              DEBUGASSERT((unsigned long)(dev->pid) == arg);
             }
             break;
 #endif
@@ -1516,8 +1499,8 @@ static int uart_poll(FAR struct file *filep,
 
       if (i >= CONFIG_SERIAL_NPOLLWAITERS)
         {
-          fds->priv    = NULL;
-          ret          = -EBUSY;
+          fds->priv = NULL;
+          ret       = -EBUSY;
           goto errout;
         }
 
@@ -1583,15 +1566,15 @@ static int uart_poll(FAR struct file *filep,
 #ifdef CONFIG_DEBUG_FEATURES
       if (!slot)
         {
-          ret              = -EIO;
+          ret = -EIO;
           goto errout;
         }
 #endif
 
       /* Remove all memory of the poll setup */
 
-      *slot                = NULL;
-      fds->priv            = NULL;
+      *slot     = NULL;
+      fds->priv = NULL;
     }
 
 errout:
