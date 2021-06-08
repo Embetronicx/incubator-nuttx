@@ -63,8 +63,6 @@ static int etx_gpio_ioctl(FAR struct file *filep, int cmd, unsigned long arg);
 
 struct sigevent event  = { 0 };
 pid_t  pid;
-int    input_gpio_num  = INVALID_GPIO;
-int    output_gpio_num = INVALID_GPIO;
 
 static const struct file_operations etx_gpio_fops =
 {
@@ -155,12 +153,18 @@ static ssize_t etx_gpio_write(FAR struct file *filep, FAR const char *buffer,
                              size_t len)
 {
   DEBUGASSERT(buffer != NULL);
-  if( output_gpio_num != INVALID_GPIO )
+  
+  etx_gpio *gpio = (FAR etx_gpio *)((uintptr_t)buffer);
+  
+  if( gpio->gpio_num < 0 || gpio->gpio_num > ESP32_NGPIOS )
   {
-    etx_gpio *gpio = (FAR etx_gpio *)((uintptr_t)buffer);
-    // Write to the GPIO
-    esp32_gpiowrite(output_gpio_num, *gpio->gpio_value);
+    syslog(LOG_ERR, "Write: Invalid GPIO Number - %d\n", gpio->gpio_num);
+    return ( len );
   }
+  
+  // Write to the GPIO
+  esp32_gpiowrite( gpio->gpio_num, *gpio->gpio_value );
+    
   return ( len );
 }
 
@@ -181,12 +185,17 @@ static ssize_t etx_gpio_read(FAR struct file *filep, FAR char *buffer,
   int ret = 0;
   
   DEBUGASSERT(buffer != NULL);
+
+  etx_gpio *gpio = (FAR etx_gpio *)( (uintptr_t)buffer );
   
-  if( input_gpio_num != INVALID_GPIO )
+  if( gpio->gpio_num < 0 || gpio->gpio_num > ESP32_NGPIOS )
   {
-    etx_gpio *gpio = (FAR etx_gpio *)((uintptr_t)buffer);
-    *gpio->gpio_value  = esp32_gpioread(input_gpio_num);
+    syslog(LOG_ERR, "Read: Invalid GPIO Number - %d\n", gpio->gpio_num);
+    return ( ret );
   }
+   
+  *gpio->gpio_value  = esp32_gpioread( gpio->gpio_num );
+    
   return ( ret );
 }
 
@@ -211,6 +220,12 @@ static int etx_gpio_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
   //copy the GPIO struct
   memcpy( &gpio, (FAR void *)arg, sizeof(etx_gpio) );
   
+  if( gpio.gpio_num < 0 || gpio.gpio_num > ESP32_NGPIOS )
+  {
+    syslog(LOG_ERR, "IOCTL: Invalid GPIO Number - %d\n", gpio.gpio_num);
+    return ( -1 );
+  }
+  
   switch( cmd )
   {    
     case GPIOC_REGISTER:
@@ -220,19 +235,17 @@ static int etx_gpio_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
         pid = getpid();
       }
       
-      if(( input_gpio_num == INVALID_GPIO ) && ( gpio.gpio_type == ETX_GPIO_IN ))
+      if( gpio.gpio_type == ETX_GPIO_IN )
       {
         // Configure the GPIO as output
         esp32_configgpio( gpio.gpio_num , INPUT );
-        input_gpio_num = gpio.gpio_num;
       }
-      else if(( output_gpio_num == INVALID_GPIO ) && ( gpio.gpio_type == ETX_GPIO_OUT ))
+      else if( gpio.gpio_type == ETX_GPIO_OUT )
       {
         // Configure the GPIO as output
         esp32_configgpio( gpio.gpio_num , OUTPUT );
-        output_gpio_num = gpio.gpio_num;
       }
-      else if(( input_gpio_num == INVALID_GPIO ) && ( gpio.gpio_type == ETX_GPIO_IN_INT ))
+      else if( gpio.gpio_type == ETX_GPIO_IN_INT )
       {
         // Configure the GPIO as interrupt pin
         int irq = ESP32_PIN2IRQ(gpio.gpio_num);
@@ -241,7 +254,6 @@ static int etx_gpio_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
         if( ret >= 0 )
         {
           esp32_gpioirqenable(irq, ONHIGH);
-          input_gpio_num = gpio.gpio_num;
         }
       }
       else
@@ -256,27 +268,12 @@ static int etx_gpio_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
     case GPIOC_UNREGISTER:
     {
       /* Unregister the GPIO */
-      if(( input_gpio_num != INVALID_GPIO ) && ( gpio.gpio_type == ETX_GPIO_IN ))
-      {
-        // Configure the GPIO as output
-        input_gpio_num = INVALID_GPIO;
-      }
-      else if(( output_gpio_num != INVALID_GPIO ) && ( gpio.gpio_type == ETX_GPIO_OUT ))
-      {
-        output_gpio_num = INVALID_GPIO;
-      }
-      else if(( input_gpio_num != INVALID_GPIO ) && ( gpio.gpio_type == ETX_GPIO_IN_INT ))
+      if( gpio.gpio_type == ETX_GPIO_IN_INT )
       {
         // unregister the interrupt pin
-        int irq = ESP32_PIN2IRQ(input_gpio_num);
+        int irq = ESP32_PIN2IRQ(gpio.gpio_num);
         esp32_gpioirqdisable(irq);
-        input_gpio_num = INVALID_GPIO;
         pid = 0;
-      }
-      else
-      {
-        // Invalid operation
-        ret = -1;
       }
     }
     break;
@@ -284,7 +281,6 @@ static int etx_gpio_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
     default:
       ret = -1;
       break;
-  
   }
 
   return ( ret );
