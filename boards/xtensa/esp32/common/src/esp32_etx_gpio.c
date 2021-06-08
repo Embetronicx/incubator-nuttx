@@ -230,11 +230,6 @@ static int etx_gpio_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
   {    
     case GPIOC_REGISTER:
     {      
-      if( gpio.gpio_type == ETX_GPIO_IN_INT )
-      {
-        pid = getpid();
-      }
-      
       if( gpio.gpio_type == ETX_GPIO_IN )
       {
         // Configure the GPIO as output
@@ -247,6 +242,8 @@ static int etx_gpio_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
       }
       else if( gpio.gpio_type == ETX_GPIO_IN_INT )
       {
+      	pid = getpid();
+      	
         // Configure the GPIO as interrupt pin
         int irq = ESP32_PIN2IRQ(gpio.gpio_num);
         esp32_configgpio( gpio.gpio_num , INPUT_FUNCTION_3 | PULLUP );
