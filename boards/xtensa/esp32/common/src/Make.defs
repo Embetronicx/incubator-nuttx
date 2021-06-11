@@ -62,6 +62,10 @@ ifeq ($(CONFIG_ESP32_ETX_GPIO),y)
   CSRCS += esp32_etx_gpio.c
 endif
 
+ifeq ($(CONFIG_ESP32_ETX_SPI),y)
+  CSRCS += esp32_etx_spi.c
+endif
+
 DEPPATH += --dep-path src
 VPATH += :src
 CFLAGS += $(shell $(INCDIR) "$(CC)" $(TOPDIR)$(DELIM)arch$(DELIM)$(CONFIG_ARCH)$(DELIM)src$(DELIM)board$(DELIM)src)

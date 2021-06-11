@@ -85,4 +85,14 @@ config ESP32_ETX_GPIO
 		This includes the EmbeTronicX GPIO driver which controls 
 		the GPIO.
 		
+config ESP32_ETX_SPI
+	bool "EmbeTronicX SPI driver"
+	default n
+	depends on SPI && ( ESP32_SPI3 || ESP32_SPI2 ) && SPI_DRIVER
+	---help---
+		Enables the EmbeTronicX SPI Driver (ESP32).
+		
+		This is added by the EmbeTroincX to demonstrate the
+		SPI using the ESP32 Dev board with NuttX.
+		
 endmenu # EmbeTronicX Drivers		

@@ -54,6 +54,10 @@
 #include "esp32_etx_gpio.h"
 #endif
 
+#ifdef CONFIG_ESP32_ETX_SPI
+#include "esp32_etx_spi.h"
+#endif
+
 #ifdef CONFIG_CAN_MCP2515
 #  include "esp32_mcp2515.h"
 #endif
@@ -311,6 +315,16 @@ int esp32_bringup(void)
   if (ret < 0)
     {
       syslog(LOG_ERR, "ERROR: etx_gpio_driver_init() failed: %d\n", ret);
+    }
+#endif
+
+#ifdef CONFIG_ESP32_ETX_SPI
+  /* Register the EmbeTronicX SPI Driver */
+  
+  ret = etx_spi_driver_init();
+  if (ret < 0)
+    {
+      syslog(LOG_ERR, "ERROR: etx_spi_driver_init() failed: %d\n", ret);
     }
 #endif
 
