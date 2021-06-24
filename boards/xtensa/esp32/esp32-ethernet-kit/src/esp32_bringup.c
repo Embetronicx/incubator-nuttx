@@ -74,6 +74,10 @@
 #  include <nuttx/input/buttons.h>
 #endif
 
+#ifdef CONFIG_RTC_DRIVER
+#  include "esp32_rtc_lowerhalf.h"
+#endif
+
 #include "esp32-ethernet-kit.h"
 
 /****************************************************************************
@@ -282,6 +286,17 @@ int esp32_bringup(void)
   if (ret < 0)
     {
       syslog(LOG_ERR, "ERROR: btn_lower_initialize() failed: %d\n", ret);
+    }
+#endif
+
+#ifdef CONFIG_RTC_DRIVER
+  /* Instantiate the ESP32 RTC driver */
+
+  ret = esp32_rtc_driverinit();
+  if (ret < 0)
+    {
+      syslog(LOG_ERR,
+             "ERROR: Failed to Instantiate the RTC driver: %d\n", ret);
     }
 #endif
 
